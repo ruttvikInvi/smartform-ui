@@ -79,7 +79,9 @@ const CreateFormPage: React.FC = () => {
   };
 
   const submitForm = async (id: string) => {
+    setLoading(true)
     await submitFinalForm(id, JSON.stringify(fields));
+    setLoading(false)
     navigate("/dashboard");
   };
 

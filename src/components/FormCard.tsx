@@ -3,6 +3,7 @@ import { Link as LinkIcon, Copy } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
+import { FRONTEND_URL } from "../services/apiService";
 
 interface FormCardProps {
   formName: string;
@@ -16,7 +17,7 @@ export function FormCard({ formName, formLink, createdAt }: FormCardProps) {
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(
-      `http://localhost:5173/view/form/${formLink}`
+      `${FRONTEND_URL}/view/form/${formLink}`
     );
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
