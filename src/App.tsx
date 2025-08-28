@@ -29,7 +29,7 @@ const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/view/form/:id" element={<ViewForm />} />
-            <Route path="/view/form/:id/submissions" element={<ViewFormSubmissions />} />
+            <Route path="/view/form/:id/submissions" element={<ProtectedRoute element={<ViewFormSubmissions />} />} />
 
             {/* Protected Routes */}
             <Route

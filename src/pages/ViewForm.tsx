@@ -209,7 +209,6 @@ const ViewForm: React.FC = () => {
     const fetchFormFields = async () => {
       try {
         const response = await getFormDetails(id);
-        console.log("response", response);
         setFormFields(JSON.parse(response.finalJson));
       } catch (error) {
         console.error("Error fetching form fields:", error);
