@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { WelcomeMessage } from "../components/WelcomMessage";
-import { Card, CardContent } from "../components/ui/card";
-import { BarChart3, FormInput, Sparkles } from "lucide-react";
 import { getAllForms } from "../services/formService";
 import { FormCard } from "../components/FormCard";
+import { useAuth } from "../context/authContext";
 
 const DashboardPage: React.FC = () => {
   const [forms, setForms] = React.useState([]);
+  const { userName } = useAuth();
   useEffect(() => {
     const fetchFormFields = async () => {
       try {
@@ -21,7 +21,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="">
       <WelcomeMessage
-        userName={"Ruttvik"}
+        userName={userName}
         onDismiss={function (): void {
           throw new Error("Function not implemented.");
         }}
