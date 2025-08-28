@@ -59,7 +59,7 @@ const RegisterPage: React.FC = () => {
           setErrors({});
           try {
             await registerUser(values).then((res) => {
-              login(res.token); // Store token & set isAuthenticated
+              login(res.token, res?.user?.name || ""); // Store token & set isAuthenticated
               navigate("/dashboard"); // Redirect after registration
             });
           } catch (err: any) {

@@ -45,7 +45,7 @@ const LoginPage: React.FC = () => {
           setErrors({});
           try {
             await loginUser(values).then((res) => {
-              login(res.token);
+              login(res.token, res?.user?.name || "");
               navigate("/dashboard");
             });
             // handle success (redirect, set auth, etc.)
