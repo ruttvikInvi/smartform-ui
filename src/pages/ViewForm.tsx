@@ -35,7 +35,7 @@ const ViewForm: React.FC = () => {
 
       // Validate required fields
       const missingRequiredFields = fieldsWithValues.filter(
-        (field) => field.required && (!field.value || field.value.trim() === "")
+        (field) => field.type !== "checkbox" && field.required && (!field.value || field.value.trim() === "")
       );
 
       if (missingRequiredFields.length > 0) {
@@ -156,7 +156,6 @@ const ViewForm: React.FC = () => {
           <div key={index}>
             <label className={labelClasses}>
               {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <div className="space-y-1">
               {field.options?.map((opt, idx) => {

@@ -166,7 +166,6 @@ const CreateFormPage: React.FC = () => {
           <div key={index}>
             <label className={labelClasses}>
               {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
 
             <div className="space-y-1">
@@ -337,9 +336,9 @@ const CreateFormPage: React.FC = () => {
                 </div>
 
                 {/* Show only user messages so far */}
-                <div className="">
+                <div className='mt-2'>
                   {userMessages.map((msg, idx) => (
-                    <div key={idx} className="bg-gray-100 p-2 rounded">
+                    <div key={idx} className="bg-gray-100 p-2 rounded my-1">
                       <strong>You:</strong> {msg.message}
                     </div>
                   ))}

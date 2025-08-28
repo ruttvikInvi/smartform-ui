@@ -55,9 +55,23 @@ const ViewForm: React.FC = () => {
       <h2 className="text-2xl font-bold">Form Submissions</h2>
 
       {submissions.map((submission) => {
-        const parsedData: SubmittedField[] = JSON.parse(
-          submission.submittedData || "[]"
-        );
+        let parsedData: SubmittedField[] = [];
+
+        try {
+          const raw = submission.submittedData;
+          const maybeParsed = JSON.parse(raw || "[]");
+
+          if (Array.isArray(maybeParsed)) {
+            parsedData = maybeParsed;
+          } else {
+            console.warn("Unexpected format for submittedData:", maybeParsed);
+          }
+        } catch (error) {
+          console.error(
+            "Failed to parse submittedData:",
+            submission.submittedData
+          );
+        }
 
         return (
           <div

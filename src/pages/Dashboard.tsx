@@ -18,8 +18,6 @@ const DashboardPage: React.FC = () => {
     };
     fetchFormFields();
   }, []);
-
-  console.log("forms", forms)
   return (
     <div className="">
       <WelcomeMessage
@@ -94,7 +92,7 @@ const DashboardPage: React.FC = () => {
             </CardContent>
           </Card> */}
 
-          {forms.map((form: any) => (
+          {forms && forms.length > 0 && forms?.map((form: any) => (
             <FormCard
               key={form.id}
               formName={form.title}
