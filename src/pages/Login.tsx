@@ -40,17 +40,16 @@ const LoginPage: React.FC = () => {
       <Formik
         initialValues={{ email: "", password: "" }}
         validationSchema={validationSchema}
-        onSubmit={async (values) => {
+          onSubmit={async (values) => {
           setLoading(true);
           setErrors({});
           try {
-            await loginUser(values).then((res) => {
-              login(res.token, res?.user?.name || "");
-              navigate("/dashboard");
-            });
-            // handle success (redirect, set auth, etc.)
+            const res = await loginUser(values);
+            login(res.token, res?.user?.name || "");
+            navigate("/dashboard");
           } catch (err: any) {
-            setErrors({ api: err?.response?.data?.message || "Login failed." });
+            const msg = err?.message || err?.response?.data?.message || 'Login failed.';
+            setErrors({ api: msg });
           } finally {
             setLoading(false);
           }

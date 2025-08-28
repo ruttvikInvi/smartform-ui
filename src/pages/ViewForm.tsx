@@ -22,7 +22,9 @@ const ViewForm: React.FC = () => {
   const navigate = useNavigate();
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [formValues] = useState<{ [key: string]: any }>({});
+  const [error, setError] = useState<string | null>(null);
   const handleSubmit = async (values: { [key: string]: any }) => {
+    setError(null);
     try {
       // Map original formFields to include `value`
       const fieldsWithValues = formFields.map((field) => {
@@ -54,8 +56,10 @@ const ViewForm: React.FC = () => {
 
       await postData(`/Forms/public/${id}/submit`, payload);
       navigate("/");
-    } catch (error) {
-      console.error("Error submitting form:", error);
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to submit form. Please try again.';
+      setError(msg);
+      console.error("Error submitting form:", err);
     }
   };
 
@@ -207,11 +211,14 @@ const ViewForm: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     const fetchFormFields = async () => {
+      setError(null);
       try {
         const response = await getFormDetails(id);
         setFormFields(JSON.parse(response.finalJson));
-      } catch (error) {
-        console.error("Error fetching form fields:", error);
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to load form. Please try again later.';
+        setError(msg);
+        console.error("Error fetching form fields:", err);
       }
     };
     fetchFormFields();
@@ -224,9 +231,10 @@ const ViewForm: React.FC = () => {
     >
       {() => (
         <Form className="space-y-6">
-          {formFields.map((field: FormField, index) => (
-            <div key={index}>{renderDynamicField(field, index)}</div>
-          ))}
+              {error && <div className="text-red-600 mb-4">{error}</div>}
+              {formFields.map((field: FormField, index) => (
+                <div key={index}>{renderDynamicField(field, index)}</div>
+              ))}
           <Button type="submit" className="mt-4">
             Submit
           </Button>

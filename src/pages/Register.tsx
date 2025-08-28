@@ -58,14 +58,12 @@ const RegisterPage: React.FC = () => {
           setLoading(true);
           setErrors({});
           try {
-            await registerUser(values).then((res) => {
-              login(res.token, res?.user?.name || ""); // Store token & set isAuthenticated
-              navigate("/dashboard"); // Redirect after registration
-            });
+            const res = await registerUser(values);
+            login(res.token, res?.user?.name || ""); // Store token & set isAuthenticated
+            navigate("/dashboard"); // Redirect after registration
           } catch (err: any) {
-            setErrors({
-              api: err?.response?.data?.message || "Registration failed.",
-            });
+            const msg = err?.message || err?.response?.data?.message || 'Registration failed.';
+            setErrors({ api: msg });
           } finally {
             setLoading(false);
           }

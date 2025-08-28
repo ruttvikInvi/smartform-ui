@@ -1,4 +1,4 @@
-import { fetchData, postData, putData } from "./apiService";
+import { fetchData, postData, putData, formatApiError } from "./apiService";
 
 // Define interfaces for request and response bodies if needed
 interface CreateFormRequest {
@@ -15,8 +15,9 @@ export const createForm = async (formData: CreateFormRequest) => {
     console.log("response", response)
     return response;
   } catch (error) {
-    console.error("Form creation failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Form creation failed:", formatted);
+  throw formatted;
   }
 };
 
@@ -27,8 +28,9 @@ export const sendMessage = async (formId: string, message: string) => {
     // Handle successful message sending response
     return response;
   } catch (error) {
-    console.error("Sending message failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Sending message failed:", formatted);
+  throw formatted;
   }
 };
 
@@ -41,8 +43,9 @@ export const submitFinalForm = async (formId: string, message: string) => {
     // Handle successful final form submission response
     return response;
   } catch (error) {
-    console.error("Final form submission failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Final form submission failed:", formatted);
+  throw formatted;
   }
 };
 
@@ -53,8 +56,9 @@ export const getFormDetails = async (formId: string) => {
     // Handle successful form details retrieval response
     return response;
   } catch (error) {
-    console.error("Fetching form details failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Fetching form details failed:", formatted);
+  throw formatted;
   }
 };
 
@@ -64,8 +68,9 @@ export const getFormSubmissions = async (formId: string) => {
     // Handle successful form details retrieval response
     return response;
   } catch (error) {
-    console.error("Fetching form details failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Fetching form details failed:", formatted);
+  throw formatted;
   }
 };
 
@@ -76,7 +81,8 @@ export const getAllForms = async () => {
     // Handle successful form details retrieval response
     return response;
   } catch (error) {
-    console.error("Fetching form details failed:", error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error("Fetching form details failed:", formatted);
+  throw formatted;
   }
 };

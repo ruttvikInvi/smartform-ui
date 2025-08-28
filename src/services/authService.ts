@@ -1,4 +1,4 @@
-import { postData } from './apiService';
+import { postData, formatApiError } from './apiService';
 
 // Define interfaces for request and response bodies if needed
 interface LoginRequest {
@@ -19,8 +19,9 @@ export const loginUser = async (userData: LoginRequest) => {
     // Handle successful login response, e.g., store token, user info
     return response;
   } catch (error) {
-    console.error('Login failed:', error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error('Login failed:', formatted);
+  throw formatted;
   }
 };
 
@@ -31,7 +32,8 @@ export const registerUser = async (userData: RegisterRequest) => {
     // Handle successful registration response
     return response;
   } catch (error) {
-    console.error('Registration failed:', error);
-    throw error; // Re-throw to be caught by the component
+  const formatted = formatApiError(error);
+  console.error('Registration failed:', formatted);
+  throw formatted;
   }
 };

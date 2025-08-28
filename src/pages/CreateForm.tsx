@@ -41,12 +41,14 @@ const CreateFormPage: React.FC = () => {
   const [userMessages, setUserMessages] = useState<ChatMessage[]>([]);
   const [fields, setFields] = useState<FormField[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCreateForm = async (values: {
     formName: string;
     message: string;
   }) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await createForm({
         formName: values.formName,
@@ -60,6 +62,10 @@ const CreateFormPage: React.FC = () => {
         ...prev,
         { role: "user", message: values.message },
       ]);
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to create form. Please try again.';
+      setError(msg);
+      console.error('Create form error:', err);
     } finally {
       setLoading(false);
     }
@@ -69,10 +75,15 @@ const CreateFormPage: React.FC = () => {
     if (!formId) return;
     setLoading(true);
     setUserMessages((prev) => [...prev, { role: "user", message }]);
+    setError(null);
     try {
       const response = await sendMessage(formId, message);
       setFields(JSON.parse(JSON.parse(response.formJson).response).fields || []);
     //   await fetchFormDetails(formId);
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to send message. Please try again.';
+      setError(msg);
+      console.error('Send message error:', err);
     } finally {
       setLoading(false);
     }
@@ -80,9 +91,17 @@ const CreateFormPage: React.FC = () => {
 
   const submitForm = async (id: string) => {
     setLoading(true)
-    await submitFinalForm(id, JSON.stringify(fields));
-    setLoading(false)
-    navigate("/dashboard");
+    setError(null);
+    try {
+      await submitFinalForm(id, JSON.stringify(fields));
+      navigate("/dashboard");
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to publish form. Please try again.';
+      setError(msg);
+      console.error('Publish form error:', err);
+    } finally {
+      setLoading(false)
+    }
   };
 
   const renderDynamicField = (field: FormField, index: number) => {
@@ -224,6 +243,7 @@ const CreateFormPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {error && <div className="text-red-600 mb-4">{error}</div>}
           {!formId ? (
             // Step 1: Create form
             <Formik

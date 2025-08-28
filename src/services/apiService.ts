@@ -61,6 +61,24 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Centralized API error formatter
+export const formatApiError = (error: any) => {
+  if (!error) return { message: 'Unknown error' };
+  // axios error with response
+  if (error.response) {
+    const status = error.response.status;
+    const data = error.response.data;
+    const msg = (data && (data.message || data.error || data.detail)) || JSON.stringify(data) || error.message;
+    return { status, message: msg };
+  }
+  // request was made but no response
+  if (error.request) {
+    return { message: 'No response from server. Please check your network or API server.' };
+  }
+  // other errors
+  return { message: error.message || String(error) };
+};
+
 // --- Common API Methods ---
 
 // Example: Fetch data

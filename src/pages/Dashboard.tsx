@@ -6,6 +6,7 @@ import { useAuth } from "../context/authContext";
 
 const DashboardPage: React.FC = () => {
   const [forms, setForms] = React.useState([]);
+  const [error, setError] = React.useState<string | null>(null);
   const { userName } = useAuth();
   useEffect(() => {
     const fetchFormFields = async () => {
@@ -13,7 +14,9 @@ const DashboardPage: React.FC = () => {
         const response = await getAllForms();
         setForms(response);
       } catch (error) {
-        console.error("Error fetching form fields:", error);
+  const msg = (error as any)?.message || 'Failed to load forms. Please try again.';
+  setError(msg);
+  console.error("Error fetching form fields:", error);
       }
     };
     fetchFormFields();
@@ -27,6 +30,7 @@ const DashboardPage: React.FC = () => {
         }}
       />
       <main className="container mx-auto px-4 py-8">
+  {error && <div className="text-red-600 mb-4 text-center">{error}</div>}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
           {/* <Card className="rounded-2xl shadow-xl border border-gray-200 bg-white transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
             <CardContent className="p-6 md:p-8 flex items-start gap-4">

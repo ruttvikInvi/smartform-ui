@@ -22,15 +22,19 @@ const ViewForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [submissions, setSubmissions] = useState<SubmissionResponse[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     const fetchSubmissions = async () => {
+      setError(null);
       try {
         const response = await getFormSubmissions(id);
         setSubmissions(response || []);
-      } catch (error) {
-        console.error("Error fetching submissions:", error);
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to load submissions. Please try again.';
+        setError(msg);
+        console.error("Error fetching submissions:", err);
       }
     };
     fetchSubmissions();
@@ -42,7 +46,11 @@ const ViewForm: React.FC = () => {
         <Button variant="default" onClick={() => navigate(-1)}>
           Back
         </Button>
-        <p className="text-center">No submissions found for this form.</p>
+        {error ? (
+          <p className="text-center text-red-600">{error}</p>
+        ) : (
+          <p className="text-center">No submissions found for this form.</p>
+        )}
       </>
     );
   }
