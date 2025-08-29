@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import {
   createForm,
   sendMessage,
-  getFormDetails,
   submitFinalForm,
 } from "../services/formService";
 import { Sparkles } from "lucide-react";
@@ -36,11 +38,61 @@ interface ChatMessage {
 
 const CreateFormPage: React.FC = () => {
   const [formId, setFormId] = useState<string | null>(null);
-  const [formName, setFormName] = useState<string | null>(null);
+  const [formName, setFormName] = useState<string>("");
   const navigate = useNavigate();
   const [userMessages, setUserMessages] = useState<ChatMessage[]>([]);
   const [fields, setFields] = useState<FormField[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Speech recognition
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+
+  const lastSentRef = useRef<string | null>(null);
+  const debounceTimer = useRef<any>(null);
+
+  useEffect(() => {
+    // Debounce transcript changes: send 900ms after user stops speaking
+    if (!transcript || transcript.trim() === "") return;
+    if (transcript === lastSentRef.current) return;
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    debounceTimer.current = setTimeout(async () => {
+      const toSend = transcript.trim();
+      if (!toSend) return;
+      try {
+        setError(null);
+        // If a form is already created, send transcript as message
+        if (formId) {
+          await handleSendMessage(toSend);
+        } else {
+          // Auto-create a form using the voice transcript as the prompt.
+          // If formName is not provided, create a default one.
+          const autoFormName = formName;
+          await handleCreateForm({ formName: autoFormName, message: toSend });
+        }
+        lastSentRef.current = transcript;
+        resetTranscript();
+      } catch (err) {
+        console.error("Speech send error:", err);
+        setError(
+          (err as any)?.message || "Failed to send transcribed message."
+        );
+      }
+    }, 900);
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [transcript]);
 
   const handleCreateForm = async (values: {
     formName: string;
@@ -71,17 +123,18 @@ const CreateFormPage: React.FC = () => {
     setUserMessages((prev) => [...prev, { role: "user", message }]);
     try {
       const response = await sendMessage(formId, message);
-      setFields(JSON.parse(JSON.parse(response.formJson).response).fields || []);
-    //   await fetchFormDetails(formId);
+      setFields(
+        JSON.parse(JSON.parse(response.formJson).response).fields || []
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const submitForm = async (id: string) => {
-    setLoading(true)
+    setLoading(true);
     await submitFinalForm(id, JSON.stringify(fields));
-    setLoading(false)
+    setLoading(false);
     navigate("/dashboard");
   };
 
@@ -166,9 +219,7 @@ const CreateFormPage: React.FC = () => {
       case "checkbox":
         return (
           <div key={index}>
-            <label className={labelClasses}>
-              {field.label}
-            </label>
+            <label className={labelClasses}>{field.label}</label>
 
             <div className="space-y-1">
               {field.options?.map((opt, idx) => {
@@ -234,7 +285,7 @@ const CreateFormPage: React.FC = () => {
               })}
               onSubmit={handleCreateForm}
             >
-              {({ setFieldValue }) => (
+              {({ values, setFieldValue }) => (
                 <Form className="space-y-6">
                   {/* Form Name */}
                   <div>
@@ -249,6 +300,10 @@ const CreateFormPage: React.FC = () => {
                       name="formName"
                       type="text"
                       disabled={loading}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setFormName(e.target.value);
+                        setFieldValue("formName", e.target.value)
+                      }}
                       placeholder="Enter form name"
                       className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white"
                     />
@@ -261,17 +316,54 @@ const CreateFormPage: React.FC = () => {
 
                   {/* Message */}
                   <div>
-                    <label
-                      htmlFor="message"
-                      className="block text-sm font-medium mb-1 text-foreground"
-                    >
-                      Prompt
-                    </label>
+                    <div className="flex gap-3 items-center my-2">
+                      <label
+                        htmlFor="message"
+                        className="block text-sm font-medium mb-1 text-foreground"
+                      >
+                        Prompt
+                      </label>
+                      <div className="ml-2 flex items-center gap-2">
+                        {!browserSupportsSpeechRecognition ? (
+                          <div className="text-xs text-gray-500">
+                            Voice not supported
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (listening) {
+                                  SpeechRecognition.stopListening();
+                                } else {
+                                  SpeechRecognition.startListening();
+                                }
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm ${
+                                listening
+                                  ? "bg-red-500 text-white"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {listening ? "Listening..." : "Start Voice"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => resetTranscript()}
+                              className="px-2 py-1 rounded-full bg-gray-200 text-sm"
+                            >
+                              Clear
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                     <Field
                       as="textarea"
                       id="message"
                       name="message"
                       disabled={loading}
+                      value={transcript || values.message}
                       placeholder="Describe the form you want to create"
                       rows={4}
                       className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white resize-none"
@@ -314,6 +406,7 @@ const CreateFormPage: React.FC = () => {
                       ? "Update Form"
                       : "Generate Form"}
                   </Button>
+                  {error && <div className="text-red-600 mt-2">{error}</div>}
                 </Form>
               )}
             </Formik>
@@ -338,7 +431,7 @@ const CreateFormPage: React.FC = () => {
                 </div>
 
                 {/* Show only user messages so far */}
-                <div className='mt-2'>
+                <div className="mt-2">
                   {userMessages.map((msg, idx) => (
                     <div key={idx} className="bg-gray-100 p-2 rounded my-1">
                       <strong>You:</strong> {msg.message}
@@ -357,7 +450,8 @@ const CreateFormPage: React.FC = () => {
                     resetForm();
                   }}
                 >
-                  <Form className="space-y-6">
+                  {({ values }) => (
+                    <Form className="space-y-6">
                     <div>
                       <label
                         htmlFor="formName"
@@ -368,6 +462,8 @@ const CreateFormPage: React.FC = () => {
                       <Field
                         id="message"
                         name="message"
+                        disabled={loading}
+                        value={transcript || values.message}
                         type="text"
                         className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white"
                       />
@@ -377,15 +473,45 @@ const CreateFormPage: React.FC = () => {
                         className="text-red-500 text-xs mt-1"
                       />
 
-                      <Button
-                        type="submit"
-                        disabled={loading}
-                        className="flex mx-auto w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50 mt-2"
-                      >
-                        Send
-                      </Button>
+                      <div className="flex items-center gap-2 mt-2">
+                        {/* Mic controls for sending messages */}
+                        {!browserSupportsSpeechRecognition ? (
+                          <div className="text-xs text-gray-500">
+                            Voice not supported
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (listening) {
+                                  SpeechRecognition.stopListening();
+                                } else {
+                                  SpeechRecognition.startListening();
+                                }
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm ${
+                                listening
+                                  ? "bg-red-500 text-white"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {listening ? "Listening..." : "Start Voice"}
+                            </button>
+                          </>
+                        )}
+
+                        <Button
+                          type="submit"
+                          disabled={loading}
+                          className="flex mx-auto w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50 mt-2"
+                        >
+                          {loading ? "Sending..." : "Send"}
+                        </Button>
+                      </div>
                     </div>
                   </Form>
+                  )}
                 </Formik>
               </div>
               <div className="flex-1">
