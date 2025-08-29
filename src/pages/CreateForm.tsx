@@ -9,7 +9,7 @@ import {
   sendMessage,
   submitFinalForm,
 } from "../services/formService";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Mic, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,6 +34,7 @@ interface FormField {
 interface ChatMessage {
   role: "user" | "agent";
   message: string;
+  timestamp: number;
 }
 
 const CreateFormPage: React.FC = () => {
@@ -51,6 +52,7 @@ const CreateFormPage: React.FC = () => {
     listening,
     resetTranscript,
     browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
   } = useSpeechRecognition();
 
   const lastSentRef = useRef<string | null>(null);
@@ -76,7 +78,7 @@ const CreateFormPage: React.FC = () => {
         } else {
           // Auto-create a form using the voice transcript as the prompt.
           // If formName is not provided, create a default one.
-          const autoFormName = formName;
+          const autoFormName = formName || `Form_${Date.now()}`;
           await handleCreateForm({ formName: autoFormName, message: toSend });
         }
         lastSentRef.current = transcript;
@@ -110,7 +112,7 @@ const CreateFormPage: React.FC = () => {
       setFields(JSON.parse(res.llmResponse).fields || []);
       setUserMessages((prev) => [
         ...prev,
-        { role: "user", message: values.message },
+        { role: "user", message: values.message, timestamp: Date.now() },
       ]);
     } finally {
       setLoading(false);
@@ -120,7 +122,7 @@ const CreateFormPage: React.FC = () => {
   const handleSendMessage = async (message: string) => {
     if (!formId) return;
     setLoading(true);
-    setUserMessages((prev) => [...prev, { role: "user", message }]);
+  setUserMessages((prev) => [...prev, { role: "user", message, timestamp: Date.now() }]);
     try {
       const response = await sendMessage(formId, message);
       setFields(
@@ -267,12 +269,14 @@ const CreateFormPage: React.FC = () => {
   ];
 
   return (
-    <div className={`${!formId ? "w-full" : "w-xl"} mx-auto p-6`}>
+    <div className="mx-auto p-6 w-full max-w-5xl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+            <Sparkles className="h-6 w-6 text-blue-400" />
             Create New Form
           </CardTitle>
+          <p className="text-sm text-gray-500 text-center mt-1">Generate smart forms with text or voice. Speak and the transcript will be auto-sent.</p>
         </CardHeader>
         <CardContent>
           {!formId ? (
@@ -324,9 +328,9 @@ const CreateFormPage: React.FC = () => {
                         Prompt
                       </label>
                       <div className="ml-2 flex items-center gap-2">
-                        {!browserSupportsSpeechRecognition ? (
+                        {!browserSupportsSpeechRecognition || !isMicrophoneAvailable ? (
                           <div className="text-xs text-gray-500">
-                            Voice not supported
+                            Voice not available. Please allow microphone access.
                           </div>
                         ) : (
                           <>
@@ -339,20 +343,13 @@ const CreateFormPage: React.FC = () => {
                                   SpeechRecognition.startListening();
                                 }
                               }}
-                              className={`px-3 py-1 rounded-full text-sm ${
+                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
                                 listening
                                   ? "bg-red-500 text-white"
                                   : "bg-gray-100 text-gray-800"
                               }`}
                             >
-                              {listening ? "Listening..." : "Start Voice"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => resetTranscript()}
-                              className="px-2 py-1 rounded-full bg-gray-200 text-sm"
-                            >
-                              Clear
+                              <Mic className="h-4 w-4" />
                             </button>
                           </>
                         )}
@@ -366,7 +363,7 @@ const CreateFormPage: React.FC = () => {
                       value={transcript || values.message}
                       placeholder="Describe the form you want to create"
                       rows={4}
-                      className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white resize-none"
+                      className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white resize-none shadow-sm"
                     />
                     <ErrorMessage
                       name="message"
@@ -396,7 +393,7 @@ const CreateFormPage: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="flex mx-auto w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50"
+                    className="flex mx-auto w-full sm:w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50"
                   >
                     {loading
                       ? formId
@@ -411,7 +408,7 @@ const CreateFormPage: React.FC = () => {
               )}
             </Formik>
           ) : (
-            <div className="flex justify-between gap-32">
+            <div className="flex flex-col md:flex-row md:justify-between md:gap-8 gap-6">
               <div className="flex-1">
                 <div>
                   <label
@@ -431,7 +428,7 @@ const CreateFormPage: React.FC = () => {
                 </div>
 
                 {/* Show only user messages so far */}
-                <div className="mt-2">
+                <div className="mt-2 max-h-[240px] overflow-y-auto custom-scrollbar">
                   {userMessages.map((msg, idx) => (
                     <div key={idx} className="bg-gray-100 p-2 rounded my-1">
                       <strong>You:</strong> {msg.message}
@@ -452,84 +449,84 @@ const CreateFormPage: React.FC = () => {
                 >
                   {({ values }) => (
                     <Form className="space-y-6">
-                    <div>
-                      <label
-                        htmlFor="formName"
-                        className="block text-sm font-medium mb-1 text-foreground"
-                      >
-                        Message
-                      </label>
-                      <Field
-                        id="message"
-                        name="message"
-                        disabled={loading}
-                        value={transcript || values.message}
-                        type="text"
-                        className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white"
-                      />
-                      <ErrorMessage
-                        name="message"
-                        component="div"
-                        className="text-red-500 text-xs mt-1"
-                      />
-
-                      <div className="flex items-center gap-2 mt-2">
-                        {/* Mic controls for sending messages */}
-                        {!browserSupportsSpeechRecognition ? (
-                          <div className="text-xs text-gray-500">
-                            Voice not supported
-                          </div>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (listening) {
-                                  SpeechRecognition.stopListening();
-                                } else {
-                                  SpeechRecognition.startListening();
-                                }
-                              }}
-                              className={`px-3 py-1 rounded-full text-sm ${
-                                listening
-                                  ? "bg-red-500 text-white"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {listening ? "Listening..." : "Start Voice"}
-                            </button>
-                          </>
-                        )}
-
-                        <Button
-                          type="submit"
-                          disabled={loading}
-                          className="flex mx-auto w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50 mt-2"
+                      <div>
+                        <div className="flex items-center gap-3 my-2">
+                        <label
+                          htmlFor="formName"
+                          className="block text-sm font-medium mb-1 text-foreground"
                         >
-                          {loading ? "Sending..." : "Send"}
-                        </Button>
+                          Message
+                        </label>
+                        {/* Mic controls for sending messages */}
+                          {!browserSupportsSpeechRecognition || !isMicrophoneAvailable? (
+                            <div className="text-xs text-gray-500">
+                              Voice not available. Please allow microphone access.
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (listening) {
+                                    SpeechRecognition.stopListening();
+                                  } else {
+                                    SpeechRecognition.startListening();
+                                  }
+                                }}
+                                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                                  listening
+                                    ? "bg-red-500 text-white"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                <Mic className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          </div>
+                        <Field
+                          id="message"
+                          name="message"
+                          disabled={loading}
+                          value={transcript || values.message}
+                          type="text"
+                          className="w-full px-3 py-2 border border-[rgb(var(--color-platinum))] rounded-md focus:outline-none focus:ring-2 focus:ring-[rgb(var(--color-caribbean-current))] bg-white dark:bg-[rgb(var(--color-jet))] dark:text-white"
+                        />
+                        <ErrorMessage
+                          name="message"
+                          component="div"
+                          className="text-red-500 text-xs mt-1"
+                        />
+
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            type="submit"
+                            disabled={loading}
+                            className="ml-auto w-full sm:w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50"
+                          >
+                            {loading ? "Sending..." : "Send"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </Form>
+                    </Form>
                   )}
                 </Formik>
               </div>
-              <div className="flex-1">
-                {/* Dynamic form */}
-                {fields.length > 0 && (
-                  <Formik
-                    initialValues={fields.reduce((acc, f) => {
-                      acc[f.label.replace(/\s+/g, "_").toLowerCase()] = "";
-                      return acc;
-                    }, {} as Record<string, any>)}
-                    onSubmit={() => submitForm(formId)}
-                  >
+              {/* Dynamic form */}
+              {fields.length > 0 && (
+                <Formik
+                  initialValues={fields.reduce((acc, f) => {
+                    acc[f.label.replace(/\s+/g, "_").toLowerCase()] = "";
+                    return acc;
+                  }, {} as Record<string, any>)}
+                  onSubmit={() => { if (formId) submitForm(formId); }}
+                >
                     <Form className="space-y-4">
                       {fields.map((f, idx) => renderDynamicField(f, idx))}
                       <Button
                         type="submit"
                         disabled={loading}
-                        className="flex mx-auto w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50 mt-2"
+                        className="flex mx-auto w-full sm:w-[300px] py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-[rgb(var(--color-indigo-dye))] transition-colors font-semibold disabled:opacity-50 mt-2"
                       >
                         Publish Form
                       </Button>
@@ -537,7 +534,8 @@ const CreateFormPage: React.FC = () => {
                   </Formik>
                 )}
               </div>
-            </div>
+          
+            // </div>
           )}
         </CardContent>
       </Card>
