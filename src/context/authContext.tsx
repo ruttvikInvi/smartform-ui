@@ -20,11 +20,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const name = localStorage.getItem("userName");
+    setUserName(name || "");
     setIsAuthenticated(!!token);
   }, []);
 
   const login = (token: string, name: string) => {
     localStorage.setItem("token", token);
+    localStorage.setItem("userName", name);
     setUserName(name);
     setIsAuthenticated(true);
   };

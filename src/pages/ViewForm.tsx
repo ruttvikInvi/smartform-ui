@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button"; // Adjust the import based on 
 import { getFormDetails } from "../services/formService";
 import { useNavigate, useParams } from "react-router-dom";
 import { postData } from "../services/apiService";
+import Loader from "../components/Loader";
 
 interface FormFieldOption {
   id: string;
@@ -21,6 +22,7 @@ const ViewForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [formFields, setFormFields] = useState<FormField[]>([]);
+  const [loading, setLoading] = useState(false);
   const [formValues] = useState<{ [key: string]: any }>({});
   const handleSubmit = async (values: { [key: string]: any }) => {
     try {
@@ -35,7 +37,10 @@ const ViewForm: React.FC = () => {
 
       // Validate required fields
       const missingRequiredFields = fieldsWithValues.filter(
-        (field) => field.type !== "checkbox" && field.required && (!field.value || field.value.trim() === "")
+        (field) =>
+          field.type !== "checkbox" &&
+          field.required &&
+          (!field.value || field.value.trim() === "")
       );
 
       if (missingRequiredFields.length > 0) {
@@ -52,10 +57,13 @@ const ViewForm: React.FC = () => {
         formData: JSON.stringify(fieldsWithValues),
       };
 
+      setLoading(true);
       await postData(`/Forms/public/${id}/submit`, payload);
       navigate("/");
     } catch (error) {
       console.error("Error submitting form:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,9 +162,7 @@ const ViewForm: React.FC = () => {
       case "checkbox":
         return (
           <div key={index}>
-            <label className={labelClasses}>
-              {field.label}
-            </label>
+            <label className={labelClasses}>{field.label}</label>
             <div className="space-y-1">
               {field.options?.map((opt, idx) => {
                 const value = typeof opt === "string" ? opt : opt.id;
@@ -207,32 +213,43 @@ const ViewForm: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     const fetchFormFields = async () => {
+      setLoading(true);
       try {
         const response = await getFormDetails(id);
         setFormFields(JSON.parse(response.finalJson));
       } catch (error) {
         console.error("Error fetching form fields:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchFormFields();
   }, [id]);
 
   return (
-    <Formik
-      initialValues={formValues}
-      onSubmit={(values) => handleSubmit(values)}
-    >
-      {() => (
-        <Form className="space-y-6">
-          {formFields.map((field: FormField, index) => (
-            <div key={index}>{renderDynamicField(field, index)}</div>
-          ))}
-          <Button type="submit" className="mt-4">
-            Submit
-          </Button>
-        </Form>
+    <div className="flex justify-center mt-5">
+      {loading ? (
+        <Loader />
+      ) : (
+        <Formik
+          initialValues={formValues}
+          onSubmit={(values) => handleSubmit(values)}
+        >
+          <div className="max-w-3xl w-full">
+            <Form className="space-y-6">
+              {formFields.map((field: FormField, index) => (
+                <div key={index}>{renderDynamicField(field, index)}</div>
+              ))}
+              <div className="flex justify-center items-center">
+                <Button type="submit">
+                Submit
+              </Button>
+              </div>
+            </Form>
+          </div>
+        </Formik>
       )}
-    </Formik>
+    </div>
   );
 };
 

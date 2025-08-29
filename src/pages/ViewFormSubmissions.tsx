@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getFormSubmissions } from "../services/formService";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import Loader from "../components/Loader";
 
 interface SubmittedField {
   label: string;
@@ -21,37 +22,44 @@ interface SubmissionResponse {
 const ViewForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [loading, setLoading] = useState(false);
   const [submissions, setSubmissions] = useState<SubmissionResponse[]>([]);
 
   useEffect(() => {
     if (!id) return;
     const fetchSubmissions = async () => {
+      setLoading(true);
       try {
         const response = await getFormSubmissions(id);
         setSubmissions(response || []);
       } catch (error) {
         console.error("Error fetching submissions:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchSubmissions();
   }, [id]);
 
-  if (!submissions.length) {
-    return (
+  return loading ? (
+    <Loader />
+  ) : !submissions.length ? (
       <>
         <Button variant="default" onClick={() => navigate(-1)}>
           Back
         </Button>
         <p className="text-center">No submissions found for this form.</p>
       </>
-    );
-  }
-
-  return (
+    ) : (
     <div className="space-y-6">
-      <Button variant="default" onClick={() => navigate(-1)}>
-        Back
-      </Button>
+      <div className="flex item-center gap-3">
+        <Button variant="default" onClick={() => navigate(-1)}>
+          Back
+        </Button>
+        <Button variant="default" onClick={() => window.print()}>
+          Print
+        </Button>
+      </div>
       <h2 className="text-2xl font-bold">Form Submissions</h2>
 
       {submissions.map((submission) => {
