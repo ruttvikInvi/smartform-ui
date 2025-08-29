@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://fba266e1f869.ngrok-free.app/api'; // Replace with your actual API base URL
 
-export const FRONTEND_URL = import.meta.env.VITE_DEPLOYED_URL || `http://localhost:${window.location.port}`
+export const FRONTEND_URL = import.meta.env.VITE_DEPLOYED_URL || `https://relaxed-crumble-365f6f.netlify.app`
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
